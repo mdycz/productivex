@@ -5,6 +5,7 @@ defmodule Productive.MixProject do
     [
       app: :productive,
       version: "0.1.0",
+      description: "Elixir client for the Productive REST API",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps()
