@@ -38,6 +38,16 @@ defmodule Productive.Impl.TimeEntries do
     end
   end
 
+  @spec delete(Client.t(), id()) :: :ok | {:error, Error.t()}
+  def delete(client, id) do
+    with :ok <- validate_id_value(id) do
+      case Transport.request(client, :delete, "/time_entries/#{id}") do
+        {:ok, _body} -> :ok
+        {:error, _} = error -> error
+      end
+    end
+  end
+
   defp create_body(client, time_entry) do
     %{
       data: %{
@@ -143,6 +153,14 @@ defmodule Productive.Impl.TimeEntries do
       _ -> Map.put(errors, key, "must be a non-empty string or integer")
     end
   end
+
+  defp validate_id_value(value) when is_binary(value) and value != "", do: :ok
+  defp validate_id_value(value) when is_integer(value), do: :ok
+
+  defp validate_id_value(_),
+    do:
+      {:error,
+       Error.validation_error("time entry", %{id: "must be a non-empty string or integer"})}
 
   defp validate_non_negative_integer(errors, params, key) do
     case Map.get(params, key) do

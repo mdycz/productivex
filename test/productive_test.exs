@@ -123,6 +123,60 @@ defmodule ProductiveTest do
              })
   end
 
+  test "delete_time_entry/2 issues DELETE and returns :ok on 204", %{client: client} do
+    Req.Test.stub(Productive.Client, fn conn ->
+      assert conn.method == "DELETE"
+      assert String.ends_with?(conn.request_path, "/time_entries/entry-1")
+      assert Plug.Conn.get_req_header(conn, "x-auth-token") == ["productive-token"]
+      Plug.Conn.send_resp(conn, 204, "")
+    end)
+
+    assert :ok = Productive.delete_time_entry(client, "entry-1")
+  end
+
+  test "delete_time_entry/2 accepts integer ids", %{client: client} do
+    Req.Test.stub(Productive.Client, fn conn ->
+      assert String.ends_with?(conn.request_path, "/time_entries/42")
+      Plug.Conn.send_resp(conn, 204, "")
+    end)
+
+    assert :ok = Productive.delete_time_entry(client, 42)
+  end
+
+  test "delete_time_entry/2 returns http error on 404", %{client: client} do
+    Req.Test.stub(Productive.Client, fn conn ->
+      conn
+      |> Plug.Conn.put_resp_content_type("application/vnd.api+json")
+      |> Plug.Conn.send_resp(404, Jason.encode!(%{"errors" => [%{"detail" => "Not found"}]}))
+    end)
+
+    assert {:error,
+            %Productive.Error{
+              kind: :http_error,
+              status: 404,
+              body: %{"errors" => [%{"detail" => "Not found"}]}
+            }} = Productive.delete_time_entry(client, "entry-missing")
+  end
+
+  test "delete_time_entry/2 validates id before requesting", %{client: client} do
+    assert {:error, %Productive.Error{kind: :validation_error, details: details}} =
+             Productive.delete_time_entry(client, "")
+
+    assert details == %{id: "must be a non-empty string or integer"}
+  end
+
+  test "delete_time_entry!/2 raises on error", %{client: client} do
+    Req.Test.stub(Productive.Client, fn conn ->
+      conn
+      |> Plug.Conn.put_resp_content_type("application/vnd.api+json")
+      |> Plug.Conn.send_resp(404, Jason.encode!(%{"errors" => [%{"detail" => "Not found"}]}))
+    end)
+
+    assert_raise Productive.Error, ~r/404/, fn ->
+      Productive.delete_time_entry!(client, "entry-missing")
+    end
+  end
+
   test "returns structured http errors", %{client: client} do
     Req.Test.stub(Productive.Client, fn conn ->
       conn

@@ -14,6 +14,17 @@ defmodule Productive do
   @spec create_time_entry!(Client.t(), TimeEntries.time_entry()) :: map()
   def create_time_entry!(client, time_entry), do: unwrap!(create_time_entry(client, time_entry))
 
+  @spec delete_time_entry(Client.t(), TimeEntries.id()) :: :ok | {:error, Error.t()}
+  def delete_time_entry(client, id), do: TimeEntries.delete(client, id)
+
+  @spec delete_time_entry!(Client.t(), TimeEntries.id()) :: :ok
+  def delete_time_entry!(client, id) do
+    case delete_time_entry(client, id) do
+      :ok -> :ok
+      {:error, %Error{} = error} -> raise error
+    end
+  end
+
   @spec get_time_entries(Client.t(), TimeEntries.list_filters()) :: result()
   def get_time_entries(client, filters), do: TimeEntries.get_list(client, filters)
 
