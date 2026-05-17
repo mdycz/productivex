@@ -60,6 +60,7 @@ defmodule Productive.Impl.Invoices do
       %{}
       |> validate_page(filters)
       |> validate_after(filters)
+      |> validate_company_id(filters)
 
     if map_size(errors) == 0,
       do: :ok,
@@ -73,6 +74,14 @@ defmodule Productive.Impl.Invoices do
   defp validate_after(errors, %{after: %DateTime{}}), do: errors
   defp validate_after(errors, %{after: _}), do: Map.put(errors, :after, "must be a DateTime")
   defp validate_after(errors, _), do: errors
+
+  defp validate_company_id(errors, %{company_id: id}) when is_binary(id) and id != "", do: errors
+  defp validate_company_id(errors, %{company_id: id}) when is_integer(id), do: errors
+
+  defp validate_company_id(errors, %{company_id: _}),
+    do: Map.put(errors, :company_id, "must be a non-empty string or integer")
+
+  defp validate_company_id(errors, _), do: errors
 
   defp validate_id(value) when (is_binary(value) and value != "") or is_integer(value), do: :ok
 

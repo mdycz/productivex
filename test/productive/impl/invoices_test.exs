@@ -37,7 +37,13 @@ defmodule Productive.Impl.InvoicesTest do
 
   test "get_invoices/2 encodes filter[after] from a DateTime", %{client: client} do
     Req.Test.stub(Productive.Client, fn conn ->
-      assert URI.decode_query(conn.query_string)["filter[after]"] == "2026-05-16T10:00:00Z"
+      assert URI.decode_query(conn.query_string) == %{
+               "include" => "line_items,bill_from",
+               "page" => "1",
+               "per_page" => "50",
+               "filter[after]" => "2026-05-16T10:00:00Z"
+             }
+
       Req.Test.json(conn, %{"data" => []})
     end)
 
@@ -48,6 +54,24 @@ defmodule Productive.Impl.InvoicesTest do
              })
   end
 
+  test "get_invoices/2 encodes filter[company_id]", %{client: client} do
+    Req.Test.stub(Productive.Client, fn conn ->
+      decoded = URI.decode_query(conn.query_string)
+      assert decoded["filter[company_id]"] == "cmp-7"
+      assert decoded["page"] == "1"
+      assert decoded["per_page"] == "50"
+      assert decoded["include"] == "line_items,bill_from"
+      Req.Test.json(conn, %{"data" => []})
+    end)
+
+    assert {:ok, _} = Productive.get_invoices(client, %{page: 1, company_id: "cmp-7"})
+  end
+
+  test "get_invoices/2 rejects invalid company_id", %{client: client} do
+    assert {:error, %Productive.Error{kind: :validation_error}} =
+             Productive.get_invoices(client, %{page: 1, company_id: nil})
+  end
+
   test "get_invoice/2 hits /invoices/:id", %{client: client} do
     Req.Test.stub(Productive.Client, fn conn ->
       assert String.ends_with?(conn.request_path, "/invoices/inv-42")
@@ -55,6 +79,15 @@ defmodule Productive.Impl.InvoicesTest do
     end)
 
     assert {:ok, %{"data" => %{"id" => "inv-42"}}} = Productive.get_invoice(client, "inv-42")
+  end
+
+  test "get_invoice/2 includes line_items and bill_from", %{client: client} do
+    Req.Test.stub(Productive.Client, fn conn ->
+      assert URI.decode_query(conn.query_string) == %{"include" => "line_items,bill_from"}
+      Req.Test.json(conn, %{"data" => %{"id" => "inv-42"}})
+    end)
+
+    assert {:ok, _} = Productive.get_invoice(client, "inv-42")
   end
 
   test "get_invoices/2 rejects bad page", %{client: client} do
