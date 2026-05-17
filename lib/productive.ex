@@ -3,7 +3,7 @@ defmodule Productive do
   Productive REST API client.
   """
 
-  alias Productive.Impl.{Projects, Services, TimeEntries}
+  alias Productive.Impl.{Invoices, Projects, Services, TimeEntries}
   alias Productive.{Client, Error}
 
   @type result :: {:ok, map()} | {:error, Error.t()}
@@ -45,6 +45,18 @@ defmodule Productive do
 
   @spec get_services!(Client.t(), String.t() | integer(), pos_integer()) :: map()
   def get_services!(client, project_id, page), do: unwrap!(get_services(client, project_id, page))
+
+  @spec get_invoices(Client.t(), Invoices.list_filters()) :: result()
+  def get_invoices(client, filters), do: Invoices.get_list(client, filters)
+
+  @spec get_invoices!(Client.t(), Invoices.list_filters()) :: map()
+  def get_invoices!(client, filters), do: unwrap!(get_invoices(client, filters))
+
+  @spec get_invoice(Client.t(), Invoices.id()) :: result()
+  def get_invoice(client, id), do: Invoices.get(client, id)
+
+  @spec get_invoice!(Client.t(), Invoices.id()) :: map()
+  def get_invoice!(client, id), do: unwrap!(get_invoice(client, id))
 
   defp unwrap!({:ok, body}), do: body
   defp unwrap!({:error, %Error{} = error}), do: raise(error)
