@@ -58,11 +58,11 @@ defmodule Productive do
   @spec get_invoice!(Client.t(), Invoices.id()) :: map()
   def get_invoice!(client, id), do: unwrap!(get_invoice(client, id))
 
-  @spec get_companies(Client.t(), %{optional(:page) => pos_integer()}) :: result()
-  def get_companies(client, filters \\ %{}), do: Companies.get_list(client, filters)
+  @spec get_companies(Client.t(), Companies.list_filters()) :: result()
+  def get_companies(client, filters), do: Companies.get_list(client, filters)
 
-  @spec get_companies!(Client.t(), %{optional(:page) => pos_integer()}) :: map()
-  def get_companies!(client, filters \\ %{}), do: unwrap!(get_companies(client, filters))
+  @spec get_companies!(Client.t(), Companies.list_filters()) :: map()
+  def get_companies!(client, filters), do: unwrap!(get_companies(client, filters))
 
   @spec get_company(Client.t(), Companies.id()) :: result()
   def get_company(client, id), do: Companies.get(client, id)

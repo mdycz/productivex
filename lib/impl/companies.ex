@@ -6,16 +6,20 @@ defmodule Productive.Impl.Companies do
   @per_page 50
 
   @type id :: String.t() | integer()
+  @type list_filters :: %{optional(:page) => pos_integer()}
 
-  @spec get_list(Client.t(), %{optional(:page) => pos_integer()}) ::
+  @spec get_list(Client.t(), list_filters()) ::
           {:ok, map()} | {:error, Error.t()}
-  def get_list(client, filters \\ %{}) when is_map(filters) do
+  def get_list(client, filters) when is_map(filters) do
     page = Map.get(filters, :page, 1)
 
     with :ok <- validate_page(page) do
       Transport.request(client, :get, "/companies", params: %{page: page, per_page: @per_page})
     end
   end
+
+  def get_list(_client, _filters),
+    do: {:error, Error.validation_error("companies filters", %{filters: "must be a map"})}
 
   @spec get(Client.t(), id()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) do
