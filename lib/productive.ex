@@ -52,11 +52,11 @@ defmodule Productive do
   @spec get_invoices!(Client.t(), Invoices.list_filters()) :: map()
   def get_invoices!(client, filters), do: unwrap!(get_invoices(client, filters))
 
-  @spec get_invoice(Client.t(), Invoices.id()) :: result()
-  def get_invoice(client, id), do: Invoices.get(client, id)
+  @spec get_invoice(Client.t(), Invoices.id(), Invoices.get_opts()) :: result()
+  def get_invoice(client, id, opts \\ []), do: Invoices.get(client, id, opts)
 
-  @spec get_invoice!(Client.t(), Invoices.id()) :: map()
-  def get_invoice!(client, id), do: unwrap!(get_invoice(client, id))
+  @spec get_invoice!(Client.t(), Invoices.id(), Invoices.get_opts()) :: map()
+  def get_invoice!(client, id, opts \\ []), do: unwrap!(get_invoice(client, id, opts))
 
   @spec get_companies(Client.t(), Companies.list_filters()) :: result()
   def get_companies(client, filters), do: Companies.get_list(client, filters)
