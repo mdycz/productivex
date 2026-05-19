@@ -19,12 +19,11 @@ defmodule Productive.Impl.InvoicesTest do
     %{client: client}
   end
 
-  test "get_invoices/2 hits /invoices with paging and include params", %{client: client} do
+  test "get_invoices/2 hits /invoices with paging and no include by default", %{client: client} do
     Req.Test.stub(Productive.Client, fn conn ->
       assert String.ends_with?(conn.request_path, "/invoices")
 
       assert URI.decode_query(conn.query_string) == %{
-               "include" => "line_items,bill_from",
                "page" => "1",
                "per_page" => "50"
              }
@@ -35,10 +34,34 @@ defmodule Productive.Impl.InvoicesTest do
     assert {:ok, %{"data" => [%{"id" => "inv-1"}]}} = Productive.get_invoices(client, %{page: 1})
   end
 
+  test "get_invoices/2 forwards caller-supplied include string", %{client: client} do
+    Req.Test.stub(Productive.Client, fn conn ->
+      assert URI.decode_query(conn.query_string)["include"] == "line_items,company"
+      Req.Test.json(conn, %{"data" => []})
+    end)
+
+    assert {:ok, _} =
+             Productive.get_invoices(client, %{page: 1, include: "line_items,company"})
+  end
+
+  test "get_invoices/2 joins caller-supplied include list", %{client: client} do
+    Req.Test.stub(Productive.Client, fn conn ->
+      assert URI.decode_query(conn.query_string)["include"] == "line_items,company"
+      Req.Test.json(conn, %{"data" => []})
+    end)
+
+    assert {:ok, _} =
+             Productive.get_invoices(client, %{page: 1, include: ["line_items", "company"]})
+  end
+
+  test "get_invoices/2 rejects non-string non-list include", %{client: client} do
+    assert {:error, %Productive.Error{kind: :validation_error}} =
+             Productive.get_invoices(client, %{page: 1, include: 42})
+  end
+
   test "get_invoices/2 encodes filter[after] from a DateTime", %{client: client} do
     Req.Test.stub(Productive.Client, fn conn ->
       assert URI.decode_query(conn.query_string) == %{
-               "include" => "line_items,bill_from",
                "page" => "1",
                "per_page" => "50",
                "filter[after]" => "2026-05-16T10:00:00Z"
@@ -60,7 +83,7 @@ defmodule Productive.Impl.InvoicesTest do
       assert decoded["filter[company_id]"] == "cmp-7"
       assert decoded["page"] == "1"
       assert decoded["per_page"] == "50"
-      assert decoded["include"] == "line_items,bill_from"
+      refute Map.has_key?(decoded, "include")
       Req.Test.json(conn, %{"data" => []})
     end)
 
@@ -72,22 +95,24 @@ defmodule Productive.Impl.InvoicesTest do
              Productive.get_invoices(client, %{page: 1, company_id: nil})
   end
 
-  test "get_invoice/2 hits /invoices/:id", %{client: client} do
+  test "get_invoice/2 hits /invoices/:id without include by default", %{client: client} do
     Req.Test.stub(Productive.Client, fn conn ->
       assert String.ends_with?(conn.request_path, "/invoices/inv-42")
+      assert conn.query_string == ""
       Req.Test.json(conn, %{"data" => %{"id" => "inv-42"}})
     end)
 
     assert {:ok, %{"data" => %{"id" => "inv-42"}}} = Productive.get_invoice(client, "inv-42")
   end
 
-  test "get_invoice/2 includes line_items and bill_from", %{client: client} do
+  test "get_invoice/3 forwards caller-supplied include", %{client: client} do
     Req.Test.stub(Productive.Client, fn conn ->
-      assert URI.decode_query(conn.query_string) == %{"include" => "line_items,bill_from"}
+      assert URI.decode_query(conn.query_string) == %{"include" => "line_items,company"}
       Req.Test.json(conn, %{"data" => %{"id" => "inv-42"}})
     end)
 
-    assert {:ok, _} = Productive.get_invoice(client, "inv-42")
+    assert {:ok, _} =
+             Productive.get_invoice(client, "inv-42", include: "line_items,company")
   end
 
   test "get_invoices/2 rejects bad page", %{client: client} do
